@@ -4,7 +4,7 @@ Usage
 -----
 1. `python standalone.py -d /path/to/this/git -p 8888`
 
-2. visit http://localhost:8888/cjdns.html in your browser.
+2. visit [localhost:8888/cjdns.html](http://localhost:8888/cjdns.html) in your browser.
 
 3. Be amazed
 
