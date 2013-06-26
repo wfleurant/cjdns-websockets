@@ -1,0 +1,115 @@
+<html>
+<head>
+<title>Websocket console</title>
+<link href="console.css" rel="stylesheet" />
+</head>
+<body>
+<pre id="console">
+</pre>
+<script type="text/javascript">
+
+var transactions = {}
+var functions = {}
+
+function maketxid() {
+    chars = "abcdefghijklmnopqrstuvwxyz"
+    txid = "";
+    for(i = 0; i < 10; i++) {
+        txid += chars[Math.round(Math.random() * chars.length)];
+    }
+    return txid;
+}
+function output(data, style) {
+    if(style) {
+        data = "<span class=\"" + style + "\">" + data + "</span>";
+    }
+    console = document.getElementById("console")
+    if(console.innerHTML != "") {
+        console.innerHTML += "\n";
+    }
+    console.innerHTML += data;
+}
+
+function incomingMessage(evt) {
+    message = JSON.parse(evt.data);
+    if(message.hasOwnProperty("authentication")) {
+        if(message['authentication'] == "success") {
+            output("Authenticated", "good");
+            functionspage = 0;
+            send("Admin_availableFunctions");
+        }
+    } else if(message.hasOwnProperty("availableFunctions")) {
+        for(fn in message['availableFunctions']) {
+            //output(fn, "debug");
+            if(message['availableFunctions'].hasOwnProperty(fn)) {
+                functions[fn] = message['availableFunctions'][fn]
+            }
+        } if(message.hasOwnProperty("more")) {
+            send("Admin_availableFunctions", {"page": ++functionspage});
+        } else {
+            output("Available Functions", "good");
+            for(fn in functions) {
+                if(functions.hasOwnProperty(fn)) {
+                    var args = []
+                    for(arg in functions[fn]) {
+                        var out = "<i>" + functions[fn][arg]['type'] + "</i> " + arg;
+                        if(functions[fn][arg]['required'] == 1) {
+                            out += "<b style=\"color: #FF0000\">*</b>";
+                        }
+                        args.push(out);
+                    }
+                    output("<b>" + fn + "</b>(" + args.join(", ") + ")");
+                }
+            }
+        }
+    } else {
+        transactions[message['txid']] = message
+    }
+}
+
+function send(fn, args, txid) {
+    if(txid == undefined) {
+        txid = maketxid()
+    }
+    if(args != undefined) {
+        msg = JSON.stringify({"function": fn, "args": args, "txid": txid});
+    } else {
+        msg = JSON.stringify({"function": fn, "txid": txid})
+    }
+    connection.send(msg);
+    return txid
+}
+
+function ping() {
+    send("RouterModule_pingNode", {"path": "fc99:02f4:7795:c86c:36bd:63ae:cf49:d459"});
+}
+function start(evt) {
+    output("Connected to CJDNS", "good");
+    if(localStorage.hasOwnProperty("cjdnspassword")) {
+        var password = localStorage["cjdnspassword"];
+    } else {
+        var password = prompt("What's yer cjdns password?");
+        if(confirm("Would you like to store this in HTML5's localStorage?")) {
+            localStorage["cjdnspassword"] = password;
+        }
+    }
+    connection.send(JSON.stringify({"function":"auth", "args": {"password": password}}));
+}
+
+function disconnected(evt) {
+    output("Disconnected", "bad");
+}
+
+function error(evt) {
+    output(evt.data, "bad");
+}
+
+var connection = new WebSocket("ws://localhost:8888/cjdns");
+connection.onmessage = incomingMessage;
+connection.onopen = start;
+connection.onerror = error;
+connection.onclose = disconnected;
+
+</script>
+</body>
+</html>
