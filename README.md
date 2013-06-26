@@ -2,8 +2,7 @@ Requires [pywebsockets](https://code.google.com/p/pywebsocket/). Access cjdns's 
 
 Usage
 -----
-1.
-    python standalone.py -d /path/to/this/git -p 8888
+1. `python standalone.py -d /path/to/this/git -p 8888`
 
 2. visit http://localhost:8888/cjdns.html in your browser.
 
